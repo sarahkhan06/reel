@@ -215,11 +215,28 @@ export const EraLaunch: React.FC = () => {
       {/* 3. ILM beat — using their existing "INTRODUCING: ilm" card as-is */}
       <Sequence from={ilmStart} durationInFrames={ILM_DUR}>
         <AbsoluteFill>
-          <TealBG />
+          {/* Blurred full-bleed copy fills the frame so the contained card has no seam */}
           <AbsoluteFill>
             <Img
               src={staticFile("ilm-intro.png")}
-              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                filter: "blur(140px) brightness(0.75)",
+                transform: "scale(1.4)",
+              }}
+            />
+          </AbsoluteFill>
+          {/* Contained card, with top/bottom edges feathered into the blur */}
+          <AbsoluteFill style={{ justifyContent: "center" }}>
+            <Img
+              src={staticFile("ilm-intro.png")}
+              style={{
+                width: "100%",
+                maskImage:
+                  "linear-gradient(to bottom, transparent 0%, black 4%, black 88%, transparent 100%)",
+              }}
             />
           </AbsoluteFill>
         </AbsoluteFill>
