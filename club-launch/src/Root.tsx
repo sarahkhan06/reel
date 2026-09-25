@@ -1,12 +1,10 @@
 import "./index.css";
 import { Composition } from "remotion";
-import { MyComposition } from "./Composition";
 import { EraLaunch, eraLaunchDuration } from "./EraLaunch";
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      <MyComposition />
       <Composition
         id="EraLaunch"
         component={EraLaunch}

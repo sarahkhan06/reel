@@ -215,10 +215,13 @@ export const EraLaunch: React.FC = () => {
       {/* 3. ILM beat — using their existing "INTRODUCING: ilm" card as-is */}
       <Sequence from={ilmStart} durationInFrames={ILM_DUR}>
         <AbsoluteFill>
-          <Img
-            src={staticFile("ilm-intro.png")}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
+          <TealBG />
+          <AbsoluteFill>
+            <Img
+              src={staticFile("ilm-intro.png")}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+            />
+          </AbsoluteFill>
         </AbsoluteFill>
       </Sequence>
 
