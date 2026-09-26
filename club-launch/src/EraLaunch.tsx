@@ -67,41 +67,53 @@ const bigText: React.CSSProperties = {
 };
 
 // ---------------------------------------------------------------------------
-// INTRO MERGE — the hook. Black -> dual logos spiral together -> flash ->
-// iris wipe to solid teal -> era poster lands centered.
+// INTRO MERGE — the hook. Black -> dual logos spiral together (2D orbit,
+// NOT 3D rotateY — flat images rotated in 3D just mirror/squish without a
+// perspective-mapped renderer, so this fakes the helix with orbital motion
+// instead) -> flash -> iris wipe to solid teal -> era poster lands centered.
 // ---------------------------------------------------------------------------
 const IntroMerge: React.FC = () => {
   const frame = useCurrentFrame();
 
-  // Phase 1 (frame 8-55): logos travel from the edges to center, each
-  // orbiting around the horizontal axis (rotateY) like two strands winding
-  // into one — amplitude decays to 0 as they reach center.
+  // travel: 0 -> 1 across the spiral-in phase
   const travel = interpolate(frame, [8, 55], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.inOut(Easing.cubic),
   });
   const fadeIn = interpolate(frame, [8, 20], [0, 1], { extrapolateRight: "clamp" });
-  const wobble = Math.sin(travel * Math.PI * 3) * 90 * (1 - travel);
 
-  const leftX = interpolate(travel, [0, 1], [-560, 0]);
-  const rightX = interpolate(travel, [0, 1], [560, 0]);
-  const rotateY = interpolate(travel, [0, 1], [0, 540]);
+  // Orbital spiral: both logos travel around a shared center point, 180°
+  // apart, radius shrinking to 0 as they converge — this is what reads as
+  // "interlinking" without any 3D flip artifacts.
+  const ROTATIONS = 2.25;
+  const angle = travel * ROTATIONS * Math.PI * 2;
+  const radius = interpolate(travel, [0, 1], [480, 0], {
+    easing: Easing.in(Easing.cubic),
+  });
 
-  // Phase 2 (frame 50-64): white flash masks the overlap
+  const khidmahX = Math.cos(angle) * radius;
+  const khidmahY = Math.sin(angle) * radius * 0.55; // flatten vertically, feels less circular/more helix-like
+  const khidmahRotate = angle * (180 / Math.PI) * 0.3; // gentle in-plane tumble, safe (2D rotate, no mirroring)
+
+  const ilmX = Math.cos(angle + Math.PI) * radius;
+  const ilmY = Math.sin(angle + Math.PI) * radius * 0.55;
+  const ilmRotate = -angle * (180 / Math.PI) * 0.3;
+
+  // White flash masks the moment they overlap at center
   const flash = interpolate(frame, [50, 58, 66], [0, 1, 0], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Phase 3 (frame 58-80): iris wipe — solid teal circle expands from center
+  // Iris wipe — solid teal circle expands from center
   const irisRadius = interpolate(frame, [58, 80], [0, 150], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
   });
 
-  // Phase 4 (frame 74-90): era poster lands, held
+  // era poster lands, held
   const posterOpacity = interpolate(frame, [74, 86], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const posterScale = interpolate(frame, [74, 90], [1.15, 1], {
     extrapolateLeft: "clamp",
@@ -116,25 +128,25 @@ const IntroMerge: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ backgroundColor: "black" }}>
-      {/* dual logos winding together */}
+      {/* dual logos spiraling together */}
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", opacity: logosOpacity }}>
         <div
           style={{
             position: "absolute",
-            transform: `translateX(${leftX}px) translateY(${wobble}px) rotateY(${rotateY}deg)`,
+            transform: `translate(${khidmahX}px, ${khidmahY}px) rotate(${khidmahRotate}deg)`,
             opacity: fadeIn,
           }}
         >
-          <Img src={staticFile("khidmah-logo-transparent.png")} style={{ width: 260 }} />
+          <Img src={staticFile("khidmah-logo-transparent.png")} style={{ width: 220 }} />
         </div>
         <div
           style={{
             position: "absolute",
-            transform: `translateX(${rightX}px) translateY(${-wobble}px) rotateY(${-rotateY}deg)`,
+            transform: `translate(${ilmX}px, ${ilmY}px) rotate(${ilmRotate}deg)`,
             opacity: fadeIn,
           }}
         >
-          <Img src={staticFile("ilm-intro.png")} style={{ width: 260, objectFit: "contain" }} />
+          <Img src={staticFile("ilm-logo-transparent.png")} style={{ width: 220 }} />
         </div>
       </AbsoluteFill>
 
