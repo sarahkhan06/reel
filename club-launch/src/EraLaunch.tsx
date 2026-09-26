@@ -8,7 +8,6 @@ import {
   useCurrentFrame,
   useVideoConfig,
   interpolate,
-  interpolateColors,
   spring,
   Easing,
 } from "remotion";
@@ -25,10 +24,9 @@ for (const weight of ["500", "700", "800"]) {
 }
 
 // ---------------------------------------------------------------------------
-// COLORS — era brand: deep teal, cream type, bright teal accent
+// COLORS — era brand: flat deep teal, cream type, bright teal accent
 // ---------------------------------------------------------------------------
-const BG_DARK = "#081a1d";
-const BG_DARK_2 = "#0e2a2e";
+const BG = "#0a1f22";
 const WHITE = "#f5f0e8";
 const MUTED = "rgba(245,240,232,0.55)";
 const ACCENT = "#7fe7dc";
@@ -48,17 +46,18 @@ type Word = { text: string; at: number; accent?: boolean };
 type Exit = "blur" | "collapse" | "none";
 type Beat = { dur: number; exit?: Exit } & (
   | { kind: "hook" }
-  | { kind: "logos" }
+  | { kind: "khidmah" }
+  | { kind: "ilm" }
   | { kind: "phrase"; words: Word[]; size?: number }
   | { kind: "reveal" }
-  | { kind: "toggles"; rows: string[] }
-  | { kind: "typewriter"; text: string }
+  | { kind: "feature"; lines: string[] }
   | { kind: "outro" }
 );
 
 const BEATS: Beat[] = [
   { kind: "hook", dur: HOOK_DURATION },
-  { kind: "logos", dur: 64 },
+  { kind: "khidmah", dur: 50 },
+  { kind: "ilm", dur: 64 },
   {
     kind: "phrase",
     dur: 48,
@@ -94,12 +93,10 @@ const BEATS: Beat[] = [
     size: 160,
     words: [{ text: "GTM", at: 0, accent: true }],
   },
-  {
-    kind: "toggles",
-    dur: 84,
-    rows: ["Fireside Chats", "Build Nights", "Internships"],
-  },
-  { kind: "typewriter", dur: 70, text: "internships every semester" },
+  // Feature beats — full-screen bold text cards, one idea each
+  { kind: "feature", dur: 45, lines: ["Fireside Chats"] },
+  { kind: "feature", dur: 45, lines: ["Build Nights"] },
+  { kind: "feature", dur: 60, lines: ["Internship Program", "Every Semester"] },
   { kind: "outro", dur: 96, exit: "none" },
 ];
 
@@ -114,10 +111,7 @@ export const eraLaunchDuration =
 // ---------------------------------------------------------------------------
 const Background: React.FC = () => (
   <AbsoluteFill
-    style={{
-      background: `radial-gradient(ellipse at 50% 40%, ${BG_DARK_2} 0%, ${BG_DARK} 65%)`,
-    }}
-  />
+style={{ backgroundColor: BG }} />
 );
 
 // Wraps every beat: gentle push-in, then blurs out (or collapses to a dot)
@@ -237,46 +231,26 @@ const usePop = (at: number) => {
 // Beats
 // ---------------------------------------------------------------------------
 
-// Khidmah & ilm pop in one at a time around the "&"
-const Logos: React.FC = () => {
-  const khidmah = usePop(0);
-  const amp = usePop(10);
-  const ilm = usePop(18);
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 90,
-        fontFamily,
-      }}
-    >
-      <Img
-        src={staticFile("khidmah-logo-transparent.png")}
-        style={{ width: 380, ...khidmah }}
-      />
-      <span
-        style={{
-          color: MUTED,
-          fontSize: 96,
-          fontWeight: 500,
-          ...amp,
-        }}
-      >
-        &amp;
-      </span>
-      <Img
-        src={staticFile("ilm-intro.png")}
-        style={{
-          width: 620,
-          borderRadius: 28,
-          boxShadow: "0 30px 80px rgba(0,0,0,0.45)",
-          ...ilm,
-        }}
-      />
-    </div>
-  );
-};
+// Khidmah logo pops in on its own
+const Khidmah: React.FC = () => (
+  <Img
+    src={staticFile("khidmah-logo-transparent.png")}
+    style={{ width: 560, ...usePop(0) }}
+  />
+);
+
+// ilm's "INTRODUCING: ilm" card, full screen
+const IlmCard: React.FC = () => (
+  <Img
+    src={staticFile("ilm-intro.png")}
+    style={{
+      width: 1560,
+      borderRadius: 36,
+      boxShadow: "0 40px 120px rgba(0,0,0,0.5)",
+      ...usePop(0),
+    }}
+  />
+);
 
 // A dot grows into the era wordmark, with a subtle one-time RGB split
 const Reveal: React.FC = () => {
@@ -329,106 +303,29 @@ const Reveal: React.FC = () => {
   );
 };
 
-// iOS-style settings card slides up with a blur; toggles flip on in turn
-const Toggle: React.FC<{ onAt: number }> = ({ onAt }) => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const on = spring({
-    frame: frame - onAt,
-    fps,
-    config: { damping: 16, stiffness: 220 },
-  });
-  return (
-    <div
-      style={{
-        width: 128,
-        height: 76,
-        borderRadius: 38,
-        padding: 6,
-        backgroundColor: interpolateColors(
-          on,
-          [0, 1],
-          ["rgba(245,240,232,0.18)", ACCENT],
-        ),
-      }}
-    >
-      <div
-        style={{
-          width: 64,
-          height: 64,
-          borderRadius: 32,
-          backgroundColor: WHITE,
-          boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
-          translate: `${on * 52}px 0px`,
-        }}
+// Full-screen bold text card — headline, optional second line
+const FeatureCard: React.FC<{ lines: string[] }> = ({ lines }) => (
+  <div
+    style={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: 12,
+      fontFamily,
+      lineHeight: 1.05,
+    }}
+  >
+    {lines.map((line, i) => (
+      <BlurWord
+        key={i}
+        text={line}
+        at={i * 10}
+        accent={i > 0}
+        size={i === 0 ? 168 : 84}
       />
-    </div>
-  );
-};
-
-const ToggleCard: React.FC<{ rows: string[] }> = ({ rows }) => {
-  const frame = useCurrentFrame();
-  return (
-    <div
-      style={{
-        width: 920,
-        borderRadius: 56,
-        padding: "14px 56px",
-        backgroundColor: "#05120f",
-        border: "2px solid rgba(245,240,232,0.08)",
-        boxShadow: "0 50px 120px rgba(0,0,0,0.55)",
-        fontFamily,
-        opacity: interpolate(frame, [0, 8], [0, 1], CLAMP),
-        translate: interpolate(frame, [0, 18], ["0px 260px", "0px 0px"], {
-          ...CLAMP,
-          easing: EASE_OUT,
-        }),
-        filter: `blur(${interpolate(frame, [0, 12], [16, 0], CLAMP)}px)`,
-      }}
-    >
-      {rows.map((row, i) => (
-        <div
-          key={row}
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "36px 0",
-            borderTop: i === 0 ? "none" : "2px solid rgba(245,240,232,0.08)",
-          }}
-        >
-          <span style={{ color: WHITE, fontSize: 60, fontWeight: 700 }}>
-            {row}
-          </span>
-          <Toggle onAt={22 + i * 12} />
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// Typed out a character at a time with a blinking underscore cursor
-const Typewriter: React.FC<{ text: string }> = ({ text }) => {
-  const frame = useCurrentFrame();
-  const typed = Math.max(0, Math.floor((frame - 4) / 1.4));
-  const done = typed >= text.length;
-  const cursorOn = !done || Math.floor(frame / 8) % 2 === 0;
-  return (
-    <div
-      style={{
-        fontFamily,
-        fontSize: 96,
-        fontWeight: 700,
-        letterSpacing: -3,
-        color: WHITE,
-        whiteSpace: "pre",
-      }}
-    >
-      {text.slice(0, typed)}
-      <span style={{ color: ACCENT, opacity: cursorOn ? 1 : 0 }}>_</span>
-    </div>
-  );
-};
+    ))}
+  </div>
+);
 
 // Outro — era mark + link on the left, QR on the right, staggered blur-in
 const Outro: React.FC = () => {
@@ -481,16 +378,16 @@ const renderBeat = (beat: Beat) => {
     case "hook":
       // Whip-pan clip — drop hook-whip.mp4 in public/ and set HOOK_DURATION
       return <OffthreadVideo src={staticFile("hook-whip.mp4")} />;
-    case "logos":
-      return <Logos />;
+    case "khidmah":
+      return <Khidmah />;
+    case "ilm":
+      return <IlmCard />;
     case "phrase":
       return <Phrase words={beat.words} size={beat.size} />;
     case "reveal":
       return <Reveal />;
-    case "toggles":
-      return <ToggleCard rows={beat.rows} />;
-    case "typewriter":
-      return <Typewriter text={beat.text} />;
+    case "feature":
+      return <FeatureCard lines={beat.lines} />;
     case "outro":
       return <Outro />;
   }
@@ -520,7 +417,7 @@ const GlitchFilters: React.FC = () => (
 export const EraLaunch: React.FC = () => {
   let cursor = 0;
   return (
-    <AbsoluteFill style={{ backgroundColor: BG_DARK }}>
+    <AbsoluteFill style={{ backgroundColor: BG }}>
       <Background />
       <GlitchFilters />
       {activeBeats.map((beat, i) => {
